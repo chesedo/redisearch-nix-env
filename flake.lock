@@ -75,11 +75,29 @@
         "type": "github"
       }
     },
+    "rltest-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1743002903,
+        "narHash": "sha256-2oDHUzeQR7o/qVDzswI05FY4R0LWVVAHw67z3ozXVmM=",
+        "owner": "RedisLabsModules",
+        "repo": "RLTest",
+        "rev": "b6bc69cfa67aa05aea7c829a133b31e309c210ef",
+        "type": "github"
+      },
+      "original": {
+        "owner": "RedisLabsModules",
+        "ref": "v0.7.16",
+        "repo": "RLTest",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
         "redis-flake": "redis-flake",
+        "rltest-src": "rltest-src",
         "rust-overlay": "rust-overlay"
       }
     },
@@ -90,11 +108,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1751510438,
-        "narHash": "sha256-m8PjOoyyCR4nhqtHEBP1tB/jF+gJYYguSZmUmVTEAQE=",
+        "lastModified": 1751596734,
+        "narHash": "sha256-1tQOwmn3jEUQjH0WDJyklC+hR7Bj+iqx6ChtRX2QiPA=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "7f415261f298656f8164bd636c0dc05af4e95b6b",
+        "rev": "e28ba067a9368286a8bc88b68dc2ca92181a09f0",
         "type": "github"
       },
       "original": {

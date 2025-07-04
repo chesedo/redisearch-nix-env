@@ -16,9 +16,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+
+    rltest-src = {
+      url = "github:RedisLabsModules/RLTest/v0.7.16";
+      flake = false;  # Use the source directly, not as a flake
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay, redis-flake, ... }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, redis-flake, rltest-src, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
@@ -26,8 +31,59 @@
           overlays = [ (import rust-overlay) ];
           config.allowUnfree = true;
         };
-        redis = redis-flake.packages.${system}.redis;
-        pythonEnv = pkgs.python3;
+        redis-source = redis-flake.packages.${system}.redis;
+
+        # Custom RLTest package
+        rltest = pkgs.python3Packages.buildPythonPackage rec {
+          pname = "RLTest";
+          version = "0.7.16";
+
+          src = rltest-src;
+
+          # Use pyproject.toml for building
+          pyproject = true;
+          build-system = with pkgs.python3Packages; [
+            poetry-core
+          ];
+
+          # Runtime dependencies
+          dependencies = with pkgs.python3Packages; [
+            distro
+            progressbar2
+            psutil
+            pytest
+            pytest-cov
+            redis-source
+            setuptools  # Needed for pkg_resources
+          ];
+
+          # Skip tests during build
+          doCheck = false;
+
+          # Skip the runtime dependency version checking
+          dontCheckRuntimeDeps = true;
+
+          meta = with pkgs.lib; {
+            description = "Redis Labs Test Framework";
+            homepage = "https://github.com/RedisLabsModules/RLTest";
+            license = licenses.bsd3;
+          };
+        };
+
+        # Python environment with packages from requirements.txt
+        pythonEnv = pkgs.python3.withPackages (ps: with ps; [
+          pip # Needed for readies to detect this python env
+          gevent
+          packaging
+          deepdiff
+          redis
+          numpy
+          scipy
+          faker
+          distro
+          orderly-set
+          rltest
+        ]);
       in
       {
         devShells = {
@@ -60,15 +116,12 @@
               # To run the unit tests
               gtest.dev
 
-              # This is a cheat just to get the integration tests to work for the time being
-              # Nix should manage the environment, but readies just does not play nicely with Nix
+              # Python environment for integration tests
               pythonEnv
-              pythonEnv.pkgs.uv
-              pythonEnv.pkgs.numpy # Needed to get the C bindings for numpy
 
               # Needed by python tests
               wget
-              redis
+              redis-source
 
               rust-bin.stable.latest.default
 
