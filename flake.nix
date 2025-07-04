@@ -1,0 +1,110 @@
+{
+  description = "Build a RediSearch C program that links to a Rust library";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+
+    flake-utils.url = "github:numtide/flake-utils";
+
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    redis-flake = {
+      url = "github:chesedo/redis-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+  };
+
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, redis-flake, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ (import rust-overlay) ];
+          config.allowUnfree = true;
+        };
+        redis = redis-flake.packages.${system}.redis;
+        pythonEnv = pkgs.python3;
+      in
+      {
+        devShells = {
+          default =  pkgs.mkShell {
+            hardeningDisable = [ "fortify" "stackprotector" "pic" "relro" ];
+            # Shell hooks to create executable scripts in a local bin directory
+            shellHook = ''
+              cargo_version=$(cargo --version 2>/dev/null)
+
+              echo -e "\033[1;36m=== 🦀 Welcome to the RediSearch development environment ===\033[0m"
+              echo -e "\033[1;33m• $cargo_version\033[0m"
+              echo -e "\n\033[1;33m• Checking for any outdated packages...\033[0m\n"
+              cd src/redisearch_rs && cargo outdated --root-deps-only
+
+              # For libclang dependency to work
+              export LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib"
+              # For `sys/types.h` and `stddef.h` required by redismodules-rs
+              export BINDGEN_EXTRA_CLANG_ARGS="-I${pkgs.glibc.dev}/include -I${pkgs.gcc-unwrapped}/lib/gcc/x86_64-unknown-linux-gnu/14.3.0/include"
+            '';
+
+            buildInputs = with pkgs; [
+              # For LSP
+              ccls
+
+              # Dev dependencies based on developer.md
+              cmake
+              openssl.dev
+              libxcrypt
+
+              # To run the unit tests
+              gtest.dev
+
+              # This is a cheat just to get the integration tests to work for the time being
+              # Nix should manage the environment, but readies just does not play nicely with Nix
+              pythonEnv
+              pythonEnv.pkgs.uv
+              pythonEnv.pkgs.numpy # Needed to get the C bindings for numpy
+
+              # Needed by python tests
+              wget
+              redis
+
+              rust-bin.stable.latest.default
+
+              # To profile the code or benchmarks
+              samply
+              linuxPackages.perf
+            ];
+
+            packages = with pkgs; [
+              rust-analyzer
+              cargo-watch
+              cargo-outdated
+              lldb
+              vscode-extensions.vadimcn.vscode-lldb
+            ];
+          };
+
+          nightly = pkgs.mkShell {
+            hardeningDisable = [ "fortify" "stackprotector" "pic" "relro" ];
+
+            buildInputs = with pkgs; [
+              # Dev dependencies based on developer.md
+              cmake
+              openssl.dev
+              libxcrypt
+
+              (rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
+                extensions = [ "rust-src" "miri" "llvm-tools-preview" ];
+              }))
+            ];
+
+            packages = with pkgs; [
+              cargo-llvm-cov
+              lcov
+            ];
+          };
+        };
+      });
+}
