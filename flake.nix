@@ -102,6 +102,9 @@
               export LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib"
               # For `sys/types.h` and `stddef.h` required by redismodules-rs
               export BINDGEN_EXTRA_CLANG_ARGS="-I${pkgs.glibc.dev}/include -I${pkgs.gcc-unwrapped}/lib/gcc/x86_64-unknown-linux-gnu/14.3.0/include"
+
+              # Force SVS to build from source instead of using precompiled library
+              export CMAKE_ARGS="-DSVS_SHARED_LIB=OFF"
             '';
 
             buildInputs = with pkgs; [
