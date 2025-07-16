@@ -105,6 +105,9 @@
 
               # Force SVS to build from source instead of using precompiled library
               export CMAKE_ARGS="-DSVS_SHARED_LIB=OFF"
+
+              # Tell getpy3 to use our Nix Python directly, skipping version detection and PEP_668 logic
+              export MYPY="${pkgs.python3}/bin/python3"
             '';
 
             buildInputs = with pkgs; [
