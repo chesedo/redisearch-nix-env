@@ -108,6 +108,9 @@
 
               # Tell getpy3 to use our Nix Python directly, skipping version detection and PEP_668 logic
               export MYPY="${pkgs.python3}/bin/python3"
+
+              # Tell valgrind about the suppression file
+              export VALGRINDFLAGS="--suppressions=$PWD/valgrind.supp"
             '';
 
             buildInputs = with pkgs; [
@@ -138,6 +141,8 @@
               # For valgrind
               valgrind
               kdePackages.kcachegrind
+
+              cargo-valgrind
             ];
 
             packages = with pkgs; [
