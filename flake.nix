@@ -134,6 +134,10 @@
               # To profile the code or benchmarks
               samply
               linuxPackages.perf
+
+              # For valgrind
+              valgrind
+              kdePackages.kcachegrind
             ];
 
             packages = with pkgs; [
