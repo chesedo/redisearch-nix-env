@@ -83,6 +83,7 @@
           distro
           orderly-set
           rltest
+          ml-dtypes
         ]);
       in
       {
