@@ -18,6 +18,23 @@
         "type": "github"
       }
     },
+    "ftsb-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1744216595,
+        "narHash": "sha256-mj16uC2E6fXa8ItHzrZu/tLEORl1ZgDxj6jxOnXzJ/s=",
+        "owner": "RediSearch",
+        "repo": "ftsb",
+        "rev": "700a65fe1e5bcc85f5b949bef7fa2a991967daee",
+        "type": "github"
+      },
+      "original": {
+        "owner": "RediSearch",
+        "ref": "v0.3.10",
+        "repo": "ftsb",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1751498133,
@@ -31,6 +48,23 @@
         "owner": "NixOS",
         "ref": "nixpkgs-unstable",
         "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "python-terraform-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1614611682,
+        "narHash": "sha256-EmNikzX2SM+U5lE8virQoWWwB0uAN3DTJk0aycOSAlQ=",
+        "owner": "beelit94",
+        "repo": "python-terraform",
+        "rev": "e1ae747ebf2f3327e1e58d5ff26231720665c4de",
+        "type": "github"
+      },
+      "original": {
+        "owner": "beelit94",
+        "ref": "0.14.0",
+        "repo": "python-terraform",
         "type": "github"
       }
     },
@@ -75,6 +109,23 @@
         "type": "github"
       }
     },
+    "redisbench-admin-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1755988754,
+        "narHash": "sha256-rh3J5RgR7xwwQt55wIp5r2nsZSM/HnQTYYD+0ce4BBU=",
+        "owner": "redis-performance",
+        "repo": "redisbench-admin",
+        "rev": "d809c2754484aed5aa6f34d75689a261343683a2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "redis-performance",
+        "ref": "v0.11.41",
+        "repo": "redisbench-admin",
+        "type": "github"
+      }
+    },
     "rltest-src": {
       "flake": false,
       "locked": {
@@ -95,8 +146,11 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "ftsb-src": "ftsb-src",
         "nixpkgs": "nixpkgs",
+        "python-terraform-src": "python-terraform-src",
         "redis-flake": "redis-flake",
+        "redisbench-admin-src": "redisbench-admin-src",
         "rltest-src": "rltest-src",
         "rust-overlay": "rust-overlay"
       }

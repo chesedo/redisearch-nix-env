@@ -21,9 +21,24 @@
       url = "github:RedisLabsModules/RLTest/v0.7.16";
       flake = false;  # Use the source directly, not as a flake
     };
+
+    python-terraform-src = {
+      url = "github:beelit94/python-terraform/0.14.0";
+      flake = false;  # Use the source directly, not as a flake
+    };
+
+    redisbench-admin-src = {
+      url = "github:redis-performance/redisbench-admin/v0.11.41";
+      flake = false;  # Use the source directly, not as a flake
+    };
+
+    ftsb-src = {
+      url = "github:RediSearch/ftsb/v0.3.10";
+      flake = false;  # Use the source directly, not as a flake
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay, redis-flake, rltest-src, ... }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, redis-flake, rltest-src, python-terraform-src, redisbench-admin-src, ftsb-src, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
@@ -70,6 +85,97 @@
           };
         };
 
+        # Custom python-terraform package since it is not available in nixpkgs
+        python-terraform = pkgs.python3Packages.buildPythonPackage rec {
+          pname = "python-terraform";
+          version = "0.14.0";
+
+          src = python-terraform-src;
+
+          format = "setuptools";
+
+          meta = with pkgs.lib; {
+            description = "Python wrapper for terraform command line tool";
+            homepage = "https://github.com/beelit94/python-terraform";
+            license = licenses.mit;
+          };
+        };
+
+        # Custom redisbench-admin package
+        redisbench-admin = pkgs.python3Packages.buildPythonPackage rec {
+          pname = "redisbench-admin";
+          version = "0.11.41";
+
+          src = redisbench-admin-src;
+
+          pyproject = true;
+          build-system = with pkgs.python3Packages; [
+            poetry-core
+          ];
+
+          dependencies = with pkgs.python3Packages; [
+            flask
+            flask-httpauth
+            gitpython
+            jinja2
+            pyyaml
+            boto3
+            certifi
+            daemonize
+            flask-restx
+            humanize
+            jsonpath-ng
+            matplotlib
+            numpy
+            pandas
+            paramiko
+            psutil
+            py-cpuinfo
+            pygithub
+            pysftp
+            pytablewriter
+            python-terraform
+            redis
+            requests
+            slack-bolt
+            slack-sdk
+            sshtunnel
+            toml
+            tqdm
+            watchdog
+            wget
+          ];
+
+          # Skip tests during build
+          doCheck = false;
+          dontCheckRuntimeDeps = true;
+
+          meta = with pkgs.lib; {
+            description = "Redis benchmarking and performance analysis tool";
+            homepage = "https://github.com/redis-performance/redisbench-admin";
+            license = licenses.bsd3;
+          };
+        };
+
+        # Custom ftsb package
+        ftsb = pkgs.buildGoModule {
+          pname = "ftsb";
+          version = "0.3.10";
+
+          src = ftsb-src;
+
+          vendorHash = "sha256-2q1mFlhpYnyZ5rMCis4HZBflC1bgtqkLORnw7wVu4J0=";
+
+          # Skip tests during build because I'm not installing docker for the tests
+          doCheck = false;
+
+          meta = with pkgs.lib; {
+            description = "Full-Text Search Benchmarking tool for RediSearch";
+            homepage = "https://github.com/RediSearch/ftsb";
+            license = licenses.mit;
+          };
+        };
+
         # Python environment with packages from requirements.txt
         pythonEnv = pkgs.python3.withPackages (ps: with ps; [
           pip # Needed for readies to detect this python env
@@ -83,6 +189,7 @@
           distro
           orderly-set
           rltest
+          redisbench-admin
           ml-dtypes
         ]);
       in
@@ -144,6 +251,10 @@
               kdePackages.kcachegrind
 
               cargo-valgrind
+
+              # For redisbench-admin
+              ftsb
+              memtier-benchmark
             ];
 
             packages = with pkgs; [
