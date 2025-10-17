@@ -130,7 +130,18 @@
             pandas
             paramiko
             psutil
-            py-cpuinfo
+            # The newest version (9.0) has a different structure which causes the profiler to not get the `brand` key correctly
+            # So we override the version to 5.0.0
+            (py-cpuinfo.overridePythonAttrs (old: rec {
+              version = "5.0.0";
+
+              src = pkgs.fetchFromGitHub {
+                owner = "workhorsy";
+                repo = "py-cpuinfo";
+                rev = "v5.0.0";
+                hash = "sha256-EbeWNXjfdgb9yZAh3+kVLBDKMVFMipV/gOUr2YxNtFM=";
+              };
+            }))
             pygithub
             pysftp
             pytablewriter
