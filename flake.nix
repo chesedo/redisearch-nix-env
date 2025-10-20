@@ -28,7 +28,7 @@
     };
 
     redisbench-admin-src = {
-      url = "github:redis-performance/redisbench-admin/v0.11.41";
+      url = "github:chesedo/redisbench-admin/do_not_daemonize";
       flake = false;  # Use the source directly, not as a flake
     };
 

@@ -112,16 +112,16 @@
     "redisbench-admin-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1755988754,
-        "narHash": "sha256-rh3J5RgR7xwwQt55wIp5r2nsZSM/HnQTYYD+0ce4BBU=",
-        "owner": "redis-performance",
+        "lastModified": 1760720421,
+        "narHash": "sha256-SE+evvdbQDhUrf4T8K5aK3WvZ92BD8mFlGoB2dOfGJE=",
+        "owner": "chesedo",
         "repo": "redisbench-admin",
-        "rev": "d809c2754484aed5aa6f34d75689a261343683a2",
+        "rev": "4fa5e959575525db75b558e2be8ee8643a06febc",
         "type": "github"
       },
       "original": {
-        "owner": "redis-performance",
-        "ref": "v0.11.41",
+        "owner": "chesedo",
+        "ref": "do_not_daemonize",
         "repo": "redisbench-admin",
         "type": "github"
       }
