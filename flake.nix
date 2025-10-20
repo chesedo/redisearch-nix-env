@@ -113,6 +113,9 @@
             poetry-core
           ];
 
+          # Add perl as a build input
+          nativeBuildInputs = [ pkgs.perl ];
+
           dependencies = with pkgs.python3Packages; [
             flask
             flask-httpauth
@@ -156,6 +159,14 @@
             watchdog
             wget
           ];
+
+          # Fix perl shebangs in .pl files
+          postInstall = ''
+            for file in $out/${pkgs.python3.sitePackages}/redisbench_admin/profilers/*.pl; do
+              substituteInPlace "$file" \
+                --replace-fail "#!/usr/bin/perl" "#!${pkgs.perl}/bin/perl"
+            done
+          '';
 
           # Skip tests during build
           doCheck = false;
