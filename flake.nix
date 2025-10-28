@@ -48,6 +48,16 @@
         };
         redis-source = redis-flake.packages.${system}.redis;
 
+        paramiko_3_5_1 = (pkgs.python313Packages.paramiko.overridePythonAttrs (old: rec {
+          version = "3.5.1";
+
+          src = pkgs.fetchPypi {
+            inherit version;
+            pname = "paramiko";
+            hash = "sha256-ssZlvEWyshW9fX8DmQGxSwZ9oA86EeZkCZX9WPJmSCI=";
+          };
+        }));
+
         # Custom RLTest package
         rltest = pkgs.python3Packages.buildPythonPackage rec {
           pname = "RLTest";
@@ -131,7 +141,7 @@
             matplotlib
             numpy
             pandas
-            paramiko
+            paramiko_3_5_1
             psutil
             # The newest version (9.0) has a different structure which causes the profiler to not get the `brand` key correctly
             # So we override the version to 5.0.0
@@ -146,14 +156,20 @@
               };
             }))
             pygithub
-            pysftp
+            (pysftp.overridePythonAttrs (old: {
+              # Fix dependency to use our custom paramiko version
+              propagatedBuildInputs = map (dep: if dep == pkgs.python3Packages.paramiko then paramiko_3_5_1 else dep) old.propagatedBuildInputs;
+            }))
             pytablewriter
             python-terraform
             redis
             requests
             slack-bolt
             slack-sdk
-            sshtunnel
+            (sshtunnel.overridePythonAttrs (old: {
+              # Fix dependency to use our custom paramiko version
+              dependencies = map (dep: if dep == pkgs.python3Packages.paramiko then paramiko_3_5_1 else dep) old.dependencies;
+            }))
             toml
             tqdm
             watchdog
