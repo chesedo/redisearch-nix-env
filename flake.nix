@@ -36,9 +36,14 @@
       url = "github:RediSearch/ftsb/v0.5.0";
       flake = false;  # Use the source directly, not as a flake
     };
+
+    cheadergen-src = {
+      url = "github:LukeMathWalker/cheadergen/0.3.1";
+      flake = false;  # Use the source directly, not as a flake
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay, redis-flake, rltest-src, python-terraform-src, redisbench-admin-src, ftsb-src, ... }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, redis-flake, rltest-src, python-terraform-src, redisbench-admin-src, ftsb-src, cheadergen-src, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
@@ -184,6 +189,70 @@
           };
         };
 
+        # The pinned nightly toolchain cheadergen invokes for rustdoc JSON.
+        # This must match the version baked into the cheadergen release (see
+        # `cheadergen_cli/rust-docs-toolchain` in the source tree).
+        cheadergenNightly = pkgs.rust-bin.nightly."2026-05-01".default.override {
+          extensions = [ "rust-src" "rust-docs-json" ];
+        };
+
+        # Cheadergen shells out to `rustup which/run <toolchain>` to locate and
+        # invoke that pinned nightly. In a Nix shell there's no rustup, so we
+        # ship a minimal shim that resolves to the toolchain above and ignores
+        # the toolchain name (we only offer one).
+        cheadergenRustupShim = pkgs.writeShellScriptBin "rustup" ''
+          set -eu
+          root=${cheadergenNightly}
+          case "''${1:-}" in
+            which)
+              shift
+              if [ "''${1:-}" = "--toolchain" ]; then shift 2; fi
+              echo "$root/bin/''${1:?rustup shim: missing binary name}"
+              ;;
+            run)
+              shift
+              if [ "''${1:-}" = "--toolchain" ]; then shift; fi
+              shift # discard toolchain name
+              bin="''${1:?rustup shim: missing command}"
+              shift
+              # Prepend the nightly toolchain to PATH so cargo's sub-invocations
+              # of `rustc`/`rustdoc` also resolve to nightly. Without this the
+              # stable rust from the surrounding dev shell wins and rustdoc
+              # rejects nightly-only flags like `-Z` / `--document-hidden-items`.
+              PATH="$root/bin:''${PATH:-}" exec "$root/bin/$bin" "$@"
+              ;;
+            *)
+              echo "rustup shim: unsupported subcommand '$*'" >&2
+              exit 1
+              ;;
+          esac
+        '';
+
+        # Custom cheadergen package (C header generator for Rust libraries)
+        cheadergen = pkgs.rustPlatform.buildRustPackage {
+          pname = "cheadergen";
+          version = "0.3.1";
+
+          src = cheadergen-src;
+
+          cargoLock = {
+            lockFile = "${cheadergen-src}/Cargo.lock";
+          };
+
+          # Build only the CLI binary
+          cargoBuildFlags = [ "-p" "cheadergen_cli" ];
+
+          # Skip tests during build
+          doCheck = false;
+
+          meta = with pkgs.lib; {
+            description = "C header generator for Rust libraries that expose a C-compatible API";
+            homepage = "https://github.com/LukeMathWalker/cheadergen";
+            license = licenses.asl20;
+            mainProgram = "cheadergen";
+          };
+        };
+
         # Custom ftsb package
         ftsb = pkgs.buildGoModule {
           pname = "ftsb";
@@ -291,6 +360,12 @@
               # For redisbench-admin
               ftsb
               memtier-benchmark
+
+              # C header generator for Rust libraries.
+              # cheadergen calls out to `rustup` to locate its pinned nightly;
+              # the shim wraps the Nix-built nightly toolchain.
+              cheadergen
+              cheadergenRustupShim
 
               # Cache for faster rebuilds
               sccache
