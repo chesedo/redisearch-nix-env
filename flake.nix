@@ -53,6 +53,12 @@
         };
         redis-source = redis-flake.packages.${system}.redis;
 
+        # All Python-based derivations below are pinned to Python 3.13 rather
+        # than nixpkgs's default `python3`. `paramiko_3_5_1` was already pinned
+        # to 3.13, so once the nixpkgs default moved to 3.14 the two halves of
+        # the environment disagreed and `redisbench-admin` refused to build
+        # ("Python version mismatch"). Pinning everything to 3.13 keeps the
+        # interpreter consistent across the tree.
         paramiko_3_5_1 = (pkgs.python313Packages.paramiko.overridePythonAttrs (old: rec {
           version = "3.5.1";
 
@@ -64,7 +70,7 @@
         }));
 
         # Custom RLTest package
-        rltest = pkgs.python3Packages.buildPythonPackage rec {
+        rltest = pkgs.python313Packages.buildPythonPackage rec {
           pname = "RLTest";
           version = "0.7.16";
 
@@ -72,12 +78,17 @@
 
           # Use pyproject.toml for building
           pyproject = true;
-          build-system = with pkgs.python3Packages; [
+          build-system = with pkgs.python313Packages; [
             poetry-core
           ];
 
+          # RLTest's pyproject.toml hardcodes a placeholder version ("99.99.99");
+          # this hook rewrites it to match the derivation's `version`, satisfying
+          # nixpkgs's pythonMetadataCheckPhase.
+          nativeBuildInputs = [ pkgs.python313Packages.pyprojectVersionPatchHook ];
+
           # Runtime dependencies
-          dependencies = with pkgs.python3Packages; [
+          dependencies = with pkgs.python313Packages; [
             distro
             progressbar2
             psutil
@@ -101,7 +112,7 @@
         };
 
         # Custom python-terraform package since it is not available in nixpkgs
-        python-terraform = pkgs.python3Packages.buildPythonPackage rec {
+        python-terraform = pkgs.python313Packages.buildPythonPackage rec {
           pname = "python-terraform";
           version = "0.14.0";
 
@@ -117,18 +128,18 @@
         };
 
         # Custom redisbench-admin package
-        redisbench-admin = pkgs.python3Packages.buildPythonPackage rec {
+        redisbench-admin = pkgs.python313Packages.buildPythonPackage rec {
           pname = "redisbench-admin";
-          version = "0.12.10";
+          version = "0.12.34";
 
           src = redisbench-admin-src;
 
           pyproject = true;
-          build-system = with pkgs.python3Packages; [
+          build-system = with pkgs.python313Packages; [
             poetry-core
           ];
 
-          dependencies = with pkgs.python3Packages; [
+          dependencies = with pkgs.python313Packages; [
             flask
             flask-httpauth
             gitpython
@@ -160,17 +171,20 @@
             pygithub
             (pysftp.overridePythonAttrs (old: {
               # Fix dependency to use our custom paramiko version
-              propagatedBuildInputs = map (dep: if dep == pkgs.python3Packages.paramiko then paramiko_3_5_1 else dep) old.propagatedBuildInputs;
+              propagatedBuildInputs = map (dep: if dep == pkgs.python313Packages.paramiko then paramiko_3_5_1 else dep) old.propagatedBuildInputs;
             }))
             pytablewriter
             python-terraform
             redis
             requests
-            slack-bolt
+            # Upstream nixpkgs slack-bolt's test suite currently fails because
+            # pyramid 2.1's `testing` module imports `pkg_resources`, which is
+            # no longer available by default. Skip the tests until fixed upstream.
+            (slack-bolt.overridePythonAttrs (_: { doCheck = false; }))
             slack-sdk
             (sshtunnel.overridePythonAttrs (old: {
               # Fix dependency to use our custom paramiko version
-              dependencies = map (dep: if dep == pkgs.python3Packages.paramiko then paramiko_3_5_1 else dep) old.dependencies;
+              dependencies = map (dep: if dep == pkgs.python313Packages.paramiko then paramiko_3_5_1 else dep) old.dependencies;
             }))
             toml
             tqdm
@@ -273,7 +287,7 @@
         };
 
         # Python environment with packages from requirements.txt
-        pythonEnv = pkgs.python3.withPackages (ps: with ps; [
+        pythonEnv = pkgs.python313.withPackages (ps: with ps; [
           pip # Needed for readies to detect this python env
           gevent
           packaging
@@ -313,7 +327,7 @@
               export CMAKE_ARGS="-DSVS_SHARED_LIB=OFF"
 
               # Tell getpy3 to use our Nix Python directly, skipping version detection and PEP_668 logic
-              export MYPY="${pkgs.python3}/bin/python3"
+              export MYPY="${pkgs.python313}/bin/python3"
 
               # Tell valgrind about the suppression file
               export VALGRINDFLAGS="--suppressions=$PWD/valgrind.supp"
@@ -408,7 +422,7 @@
               export CMAKE_ARGS="-DSVS_SHARED_LIB=OFF"
 
               # Tell getpy3 to use our Nix Python directly, skipping version detection and PEP_668 logic
-              export MYPY="${pkgs.python3}/bin/python3"
+              export MYPY="${pkgs.python313}/bin/python3"
 
               # Tell valgrind about the suppression file
               export VALGRINDFLAGS="--suppressions=$PWD/valgrind.supp"
